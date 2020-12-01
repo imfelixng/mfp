@@ -1,6 +1,8 @@
-import React, { lazy, Suspense, useState } from 'react';
-import { BrowserRouter, Switch, Route } from 'react-router-dom';
+import React, { lazy, Suspense, useState, useEffect } from 'react';
+import { Switch, Route, Router, Redirect } from 'react-router-dom';
 import { StylesProvider, createGenerateClassName } from '@material-ui/core/styles';
+
+import { createBrowserHistory } from 'history';
 
 import Header from './components/header';
 
@@ -12,39 +14,51 @@ import Progress from './components/progress';
 
 const MakertingAppLazy = lazy(() => import('./components/marketing-app'));
 const AuthAppLazy = lazy(() => import('./components/auth-app'));
+const DashboardAppLazy = lazy(() => import('./components/dashboard-app'));
 
 const generateClassName = createGenerateClassName({
     productionPrefix: 'co'
 });
 
+
+const history = createBrowserHistory();
+
 const App = () => {
     const [isSignedIn, setSignedIn] = useState(false);
+
+    useEffect(() => {
+        if (isSignedIn) {
+            if (isSignedIn) {
+                history.push('/dashboard');
+            } else {
+                history.push('/');
+            }
+        }
+    }, [isSignedIn]);
+
     return (
-        <StylesProvider generateClassName = {generateClassName}>
-            <BrowserRouter>
+        <Router history={history}>
+            <StylesProvider generateClassName={generateClassName}>
                 <div>
-                    <Header isSignedIn = {isSignedIn} onSignOut = {() => {
+                    <Header isSignedIn={isSignedIn} onSignOut={() => {
                         setSignedIn(false);
-                    }}/>
-                    <Suspense fallback = {<Progress />}>
+                    }} />
+                    <Suspense fallback={<Progress />}>
                         <Switch>
-                            <Route path = "/auth">
-                               {
-                                    (props) => (
-                                        <AuthAppLazy onSignIn = {() => {
-                                            props.history.replace('/pricing');
-                                            setSignedIn(true);
-                                        }}/>
-                                    )
-                               }
+                            <Route path="/auth">
+                                <AuthAppLazy onSignIn={() => setSignedIn(true)} />
                             </Route>
-                            <Route path = "/" component = {MakertingAppLazy}/>
+                            <Route path="/dashboard">
+                                { !isSignedIn && <Redirect to = "/" /> }
+                                <DashboardAppLazy />
+                            </Route>
+                            <Route path="/" component={MakertingAppLazy} />
                         </Switch>
                     </Suspense>
-                    
+
                 </div>
-            </BrowserRouter>
-        </StylesProvider>
+            </StylesProvider>
+        </Router>
     )
 };
 
